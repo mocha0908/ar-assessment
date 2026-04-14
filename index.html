@@ -11,6 +11,7 @@
     body { background: var(--bg); color: #1e293b; padding-bottom: 150px; font-family: sans-serif; }
     .sticky-top { background: #fff; border-bottom: 2px solid var(--main); padding: 10px 15px !important; z-index: 1020; }
     
+    /* 案件バッジ */
     .case-badge { display: inline-flex; align-items: center; gap: 5px; border: 1px solid #cbd5e1; padding: 6px 12px; border-radius: 6px; font-size: 0.85rem; font-weight: bold; background: white; cursor: pointer; transition: 0.2s; white-space: nowrap; }
     .case-badge.active { background: var(--main); color: white; border-color: var(--main); }
     .case-badge .del-btn { color: #94a3b8; font-size: 1rem; line-height: 1; padding-left: 5px; }
@@ -18,10 +19,12 @@
     .waiting-badge { background: var(--accent); color: #854d0e; border-color: #eab308; animation: pulse 2s infinite; }
     @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.8; } 100% { opacity: 1; } }
 
+    /* 検索エリア */
     .search-area { background: #fff; padding: 10px 15px; border-bottom: 1px solid #e2e8f0; }
     .filter-btn { flex: 1; padding: 8px 0; font-size: 0.8rem; font-weight: bold; border-radius: 6px; border: 1px solid #ddd; background: #fff; }
     .filter-btn.active { background: #64748b; color: white; }
 
+    /* リスト・タイル表示共通 */
     .main-table-container { background: white; margin: 10px; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
     .main-table { width: 100%; border-collapse: collapse; }
     .main-table th { background: #f8fafc; padding: 12px; font-size: 0.7rem; text-align: center; }
@@ -32,12 +35,16 @@
     .grid-item { background: white; border-radius: 10px; padding: 12px; border: 1px solid #e2e8f0; text-align: center; min-height: 380px; display: flex; flex-direction: column; }
     .grid-item.has-value { border: 2px solid var(--main); background: #fffbeb; }
     .grid-img { width: 100%; height: 130px; object-fit: contain; margin-bottom: 8px; }
-    .grid-card-name { font-size: 0.75rem; font-weight: bold; flex-grow: 1; }
 
+    /* 数量コントロール（共通） */
     .qty-ctrl { display: flex; align-items: center; background: #f1f5f9; border-radius: 6px; border: 1px solid #ddd; width: fit-content; margin: auto; overflow: hidden; }
     .qty-ctrl.has-value { background: var(--main); color: white; border-color: var(--main); }
     .qty-btn { border: none; background: transparent; color: inherit; width: 34px; height: 34px; font-weight: bold; font-size: 1.2rem; }
-    .qty-num { width: 42px; border: none; text-align: center; background: #fff; font-weight: bold; font-size: 0.95rem; height: 30px; }
+    .qty-num { width: 42px; border: none; text-align: center; background: #fff; font-weight: bold; font-size: 0.95rem; height: 30px; color: #333; }
+
+    /* 明細画面専用 */
+    #receipt .qty-ctrl { transform: scale(0.9); margin: 0; }
+    .btn-delete-row { color: #ef4444; border: none; background: none; font-size: 1.2rem; }
 
     .footer-bar { position: fixed; bottom: 0; width: 100%; background: var(--main); color: white; padding: 12px 25px; display: flex; justify-content: space-between; align-items: center; z-index: 1050; }
     .cancel-label { font-size: 0.7rem; background: #ef4444; color: white; padding: 2px 8px; border-radius: 4px; font-weight: bold; display: inline-block; margin-top: 5px; }
@@ -77,11 +84,27 @@
 <div id="receipt" class="container" style="display:none; padding:30px; background:white; min-height: 100vh;">
   <div class="text-center mb-4"><h4 class="fw-bold">査定明細書</h4></div>
   <div id="receipt-meta" class="mb-3 p-3 bg-light border rounded"></div>
-  <table class="table table-sm border">
-    <thead class="table-dark"><tr><th>商品名</th><th>ランク</th><th>単価</th><th>数</th><th>計</th></tr></thead>
+  <table class="table table-sm align-middle border">
+    <thead class="table-dark">
+      <tr>
+        <th>商品名 / ランク</th>
+        <th class="text-center">単価</th>
+        <th class="text-center no-print">数量操作</th>
+        <th class="text-center">数</th>
+        <th class="text-center">計</th>
+        <th class="text-center no-print">消</th>
+      </tr>
+    </thead>
     <tbody id="r-body"></tbody>
-    <tfoot class="fw-bold fs-5"><tr><td colspan="4" class="text-end">合計査定額</td><td id="r-total-amt" class="text-end text-danger"></td></tr></tfoot>
+    <tfoot class="fw-bold fs-5">
+      <tr>
+        <td colspan="4" class="text-end">合計査定額</td>
+        <td id="r-total-amt" class="text-end text-danger"></td>
+        <td class="no-print"></td>
+      </tr>
+    </tfoot>
   </table>
+  
   <div class="mt-4 d-flex flex-column gap-2 no-print">
     <button class="btn btn-success py-3 fw-bold shadow" onclick="window.print()"><i class="bi bi-printer"></i> 印刷・PDF保存</button>
     <button class="btn btn-primary py-3 fw-bold shadow" id="btn-finalize" onclick="finalizeTrade()"><i class="bi bi-check-circle"></i> 買取を確定して保存する</button>
@@ -144,24 +167,24 @@
     if (currentView === 'table') {
       let html = `<div class="main-table-container"><table class="main-table"><thead><tr><th>商品名</th><th>S</th><th>A</th><th>B</th><th>C</th><th>D</th></tr></thead><tbody>`;
       html += filtered.map(c => {
-        const hasV = ['S','A','B','C','D'].some(t => (inputs[c.name+'-'+t]?.q || 0) > 0);
         const cells = ['S','A','B','C','D'].map(t => {
           const key = c.name + '-' + t;
           const q = inputs[key]?.q || 0; const p = c['price'+t] || 0;
           return `<td><div class="qty-ctrl ${q>0?'has-value':''}"><button class="qty-btn" onclick="changeQty('${c.name}','${t}',${p},-1)">-</button><input type="number" class="qty-num" value="${q}" readonly><button class="qty-btn" onclick="changeQty('${c.name}','${t}',${p},1)">+</button></div><div class="text-center" style="font-size:0.65rem; color:#ef4444">¥${p.toLocaleString()}</div></td>`;
         }).join('');
+        const hasV = ['S','A','B','C','D'].some(t => (inputs[c.name+'-'+t]?.q || 0) > 0);
         return `<tr class="${hasV?'has-value-row':''}"><td><div class="d-flex align-items-center gap-2"><img src="${c.image}" style="width:40px;height:56px;object-fit:contain" onerror="this.style.visibility='hidden'"><span class="small fw-bold" style="font-size:0.7rem">${c.name}</span></div></td>${cells}</tr>`;
       }).join('');
       container.innerHTML = html + `</tbody></table></div>`;
     } else {
       let html = `<div class="card-grid">`;
       html += filtered.map(c => {
-        const hasV = ['S','A','B','C','D'].some(t => (inputs[c.name+'-'+t]?.q || 0) > 0);
         const ctrls = ['S','A','B','C','D'].map(t => {
           const q = inputs[c.name+'-'+t]?.q || 0; const p = c['price'+t] || 0;
           return `<div class="d-flex align-items-center justify-content-between mb-2"><div class="text-start" style="line-height:1.1"><span class="fw-bold" style="font-size:0.8rem">${t}</span><br><span style="font-size:0.65rem; color:#ef4444">¥${p.toLocaleString()}</span></div><div class="qty-ctrl ${q>0?'has-value':''}" style="transform:scale(0.85); margin-right:-5px;"><button class="qty-btn" onclick="changeQty('${c.name}','${t}',${p},-1)">-</button><input type="number" class="qty-num" value="${q}" readonly><button class="qty-btn" onclick="changeQty('${c.name}','${t}',${p},1)">+</button></div></div>`;
         }).join('');
-        return `<div class="grid-item ${hasV?'has-value':''}"><img src="${c.image}" class="grid-img" onerror="this.src='https://placehold.jp/24/cccccc/ffffff/100x140.png?text=NoImage'"><div class="grid-card-name">${c.name}</div><div class="mt-auto">${ctrls}</div></div>`;
+        const hasV = ['S','A','B','C','D'].some(t => (inputs[c.name+'-'+t]?.q || 0) > 0);
+        return `<div class="grid-item ${hasV?'has-value':''}"><img src="${c.image}" class="grid-img" onerror="this.src='https://placehold.jp/24/cccccc/ffffff/100x140.png?text=NoImage'"><div style="font-size:0.75rem; font-weight:bold; flex-grow:1;">${c.name}</div><div class="mt-auto">${ctrls}</div></div>`;
       }).join('');
       container.innerHTML = html + `</div>`;
     }
@@ -172,14 +195,59 @@
     let q = (inputs[key]?.q || 0) + delta;
     if (q <= 0) delete inputs[key]; 
     else inputs[key] = { n: name, t: type, p: price, q: q };
-    saveCurrentCase(); calc(); draw();
+    saveCurrentCase(); calc();
+    // 明細画面表示中の場合は明細も再描画
+    if (document.getElementById('receipt').style.display === 'block') showReceipt();
+    else draw();
+  }
+
+  function deleteRow(key) {
+    delete inputs[key];
+    saveCurrentCase(); calc(); showReceipt(); draw();
   }
 
   function calc() {
     let tq = 0, ta = 0; Object.values(inputs).forEach(i => { tq += i.q; ta += (i.q * i.p); });
     document.getElementById('t-qty').innerText = tq;
     document.getElementById('t-amt').innerText = ta.toLocaleString();
+    if (document.getElementById('r-total-amt')) {
+        document.getElementById('r-total-amt').innerText = "¥ " + ta.toLocaleString();
+    }
   }
+
+  function showReceipt() {
+    document.getElementById('main-ui').style.display='none'; 
+    document.getElementById('receipt').style.display='block';
+    const b = document.getElementById('r-body'); b.innerHTML = "";
+    
+    Object.keys(inputs).forEach(key => {
+      const i = inputs[key];
+      if (i.q <= 0) return;
+      b.innerHTML += `
+        <tr>
+          <td><div class="fw-bold" style="font-size:0.85rem">${i.n}</div><span class="badge bg-secondary">${i.t}ランク</span></td>
+          <td class="text-end">¥${i.p.toLocaleString()}</td>
+          <td class="text-center no-print">
+            <div class="qty-ctrl has-value">
+              <button class="qty-btn" onclick="changeQty('${i.n}','${i.t}',${i.p},-1)">-</button>
+              <input type="number" class="qty-num" value="${i.q}" readonly>
+              <button class="qty-btn" onclick="changeQty('${i.n}','${i.t}',${i.p},1)">+</button>
+            </div>
+          </td>
+          <td class="text-center">${i.q}</td>
+          <td class="text-end fw-bold">¥${(i.q*i.p).toLocaleString()}</td>
+          <td class="text-center no-print">
+            <button class="btn-delete-row" onclick="deleteRow('${key}')"><i class="bi bi-trash3-fill"></i></button>
+          </td>
+        </tr>`;
+    });
+    calc(); // 合計の更新
+    document.getElementById('receipt-meta').innerHTML = `顧客名: ${document.getElementById('cust-name').value || "未指定"} / 作成日: ${new Date().toLocaleDateString()}`;
+  }
+
+  function hideReceipt() { document.getElementById('receipt').style.display='none'; document.getElementById('main-ui').style.display='block'; draw(); }
+
+  // --- 以下、前回までのロジック（保存、読み込み等） ---
 
   function loadCase(id) {
     if(!cases[id]) id = Object.keys(cases)[0];
@@ -221,23 +289,10 @@
     });
   }
 
-  function showReceipt() {
-    document.getElementById('main-ui').style.display='none'; document.getElementById('receipt').style.display='block';
-    const b = document.getElementById('r-body'); b.innerHTML = "";
-    Object.values(inputs).filter(i => i.q > 0).forEach(i => {
-      b.innerHTML += `<tr><td>${i.n}</td><td>${i.t}</td><td class="text-end">¥${i.p.toLocaleString()}</td><td class="text-center">${i.q}</td><td class="text-end fw-bold">¥${(i.q*i.p).toLocaleString()}</td></tr>`;
-    });
-    document.getElementById('r-total-amt').innerText = "¥ " + document.getElementById('t-amt').innerText;
-    document.getElementById('receipt-meta').innerHTML = `顧客名: ${document.getElementById('cust-name').value || "未指定"} / 日時: ${new Date().toLocaleString()}`;
-  }
-
-  function hideReceipt() { document.getElementById('receipt').style.display='none'; document.getElementById('main-ui').style.display='block'; }
-
   async function finalizeTrade() {
     if(!confirm("この内容で確定し、スプレッドシートへ保存しますか？")) return;
     const btn = document.getElementById('btn-finalize');
     btn.disabled = true; btn.innerText = "保存中...";
-    
     const tradeData = {
       action: "log_trade",
       customerName: document.getElementById('cust-name').value || "未指定",
@@ -246,16 +301,15 @@
       totalAmount: document.getElementById('t-amt').innerText.replace(/,/g, ''),
       items: Object.values(inputs).filter(i => i.q > 0)
     };
-
     try {
       const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify(tradeData) });
       const json = await res.json();
       if(json.result === "SUCCESS") {
-        alert("保存完了しました。案件を削除します。");
+        alert("保存完了しました。");
         deleteCase({stopPropagation:()=>{}}, activeCaseId);
         hideReceipt();
       }
-    } catch(e) { alert("保存に失敗しました。GASの設定を確認してください。"); }
+    } catch(e) { alert("保存失敗"); }
     finally { btn.disabled = false; btn.innerText = "買取を確定して保存する"; }
   }
 
