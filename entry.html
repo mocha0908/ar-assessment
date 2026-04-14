@@ -23,8 +23,7 @@
       height: 200px; overflow-y: scroll; margin-bottom: 15px; line-height: 1.6; 
       color: #444; white-space: pre-wrap; border-radius: 4px;
     }
-    .form-control { border-radius: 2px; font-size: 0.9rem; }
-    .cancel-check-area { background: #fff3cd; border: 1px solid #ffeeba; padding: 10px; border-radius: 4px; margin-top: 15px; }
+    .cancel-check-area { background: #fff3cd; border: 1px solid #ffeeba; padding: 12px; border-radius: 4px; margin-top: 15px; }
   </style>
 </head>
 <body>
@@ -38,73 +37,55 @@
 
       <div class="section-title">本人確認</div>
       <div class="row g-2">
-        <div class="col-6">
-          <label class="form-label">氏名<span class="badge-req">必須</span></label>
-          <input type="text" id="name" class="form-control" placeholder="山田 太郎" required>
-        </div>
-        <div class="col-6">
-          <label class="form-label">電話番号<span class="badge-req">必須</span></label>
-          <input type="tel" id="tel" class="form-control" placeholder="09012345678" inputmode="numeric" pattern="\d*" required>
-        </div>
+        <div class="col-6"><label class="form-label">氏名<span class="badge-req">必須</span></label><input type="text" id="name" class="form-control" placeholder="山田 太郎" required></div>
+        <div class="col-6"><label class="form-label">電話番号<span class="badge-req">必須</span></label><input type="tel" id="tel" class="form-control" placeholder="09012345678" inputmode="numeric" pattern="\d*" required></div>
       </div>
       <button type="button" class="btn btn-outline-dark btn-sm w-100 mt-2 fw-bold" onclick="checkRepeater()">登録情報の照合（リピーターの方）</button>
 
       <div id="otherFields">
         <div class="section-title mt-4">詳細情報 <span id="req-label" class="text-danger" style="font-size: 0.7rem;">（全項目必須）</span></div>
         <div class="row g-2">
-          <div class="col-6">
-            <label class="form-label">カナ</label>
-            <input type="text" id="kana" class="form-control need-req" placeholder="ヤマダ タロウ" required>
-          </div>
-          <div class="col-6">
-            <label class="form-label">生年月日</label>
-            <input type="text" id="birthday" class="form-control need-req" placeholder="1990/01/01" inputmode="numeric" maxlength="10" required>
-          </div>
+          <div class="col-6"><label class="form-label">カナ</label><input type="text" id="kana" class="form-control need-req" placeholder="ヤマダ タロウ" required></div>
+          <div class="col-6"><label class="form-label">生年月日</label><input type="text" id="birthday" class="form-control need-req" placeholder="1990/01/01" inputmode="numeric" maxlength="10" required></div>
         </div>
-
         <div class="row g-2 mt-2">
-          <div class="col-4">
-            <label class="form-label">郵便番号</label>
-            <input type="text" id="zip" class="form-control p-postal-code" placeholder="1234567" inputmode="numeric" maxlength="7">
-          </div>
-          <div class="col-8">
-            <label class="form-label">現住所</label>
-            <input type="text" id="addressText" class="form-control need-req p-region p-locality p-street-address p-extended-address" placeholder="市区町村、番地、建物名" required>
-          </div>
+          <div class="col-4"><label class="form-label">郵便番号</label><input type="text" id="zip" class="form-control p-postal-code" placeholder="1234567" inputmode="numeric" maxlength="7"></div>
+          <div class="col-8"><label class="form-label">現住所</label><input type="text" id="addressText" class="form-control need-req p-region p-locality p-street-address p-extended-address" required></div>
         </div>
-
         <div class="row g-2 mt-2">
           <div class="col-6"><label class="form-label">身分証番号</label><input type="text" id="idNum" class="form-control need-req" required></div>
           <div class="col-6"><label class="form-label">職業</label><input type="text" id="job" class="form-control need-req" required></div>
         </div>
-
         <div class="mt-3 small fw-bold text-secondary border-bottom pb-1">振込先口座</div>
         <div class="row g-2 mt-1">
           <div class="col-6"><input type="text" id="bankName" class="form-control form-control-sm need-req" placeholder="銀行名" required></div>
           <div class="col-6"><input type="text" id="bankBranch" class="form-control form-control-sm need-req" placeholder="支店名" required></div>
-          <div class="col-4">
-            <select id="bankType" class="form-select form-select-sm">
-              <option value="普通">普通</option>
-              <option value="当座">当座</option>
-            </select>
-          </div>
+          <div class="col-4"><select id="bankType" class="form-select form-select-sm"><option value="普通">普通</option><option value="当座">当座</option></select></div>
           <div class="col-8"><input type="text" id="bankNum" class="form-control form-control-sm need-req" placeholder="口座番号" inputmode="numeric" required></div>
-          <div class="col-12"><input type="text" id="bankHolder" class="form-control form-control-sm need-req" placeholder="口座名義（カタカナ）" required></div>
+          <div class="col-12"><input type="text" id="bankHolder" class="form-control form-control-sm need-req" placeholder="口座名義（カナ）" required></div>
         </div>
       </div>
 
       <div class="cancel-check-area">
         <div class="form-check">
           <input class="form-check-input" type="checkbox" id="cancelIfSubMax">
-          <label class="form-check-label small fw-bold text-dark" for="cancelIfSubMax">
-            満額（状態S）査定以外の場合はキャンセルする
-          </label>
+          <label class="form-check-label small fw-bold text-dark" for="cancelIfSubMax">満額（状態S）査定以外の場合はキャンセルする</label>
           <div style="font-size: 0.65rem; color: #666; margin-top: 2px;">※チェックを入れた場合、減額時は自動的に返送（着払い）となります。</div>
         </div>
       </div>
 
       <div class="section-title mt-4">郵送買取利用規約</div>
-      <div class="terms-box" id="termsText">（規約内容は以前のものを維持）</div>
+      <div class="terms-box">■ 郵送買取利用規約・同意事項
+【1】査定および承諾について
+当店の査定結果は基準に基づき決定いたします。LINE通知後3日以内に返信がない場合は承諾とみなし、買取を成立させます。
+【2】キャンセルおよび返送について
+査定結果にご納得いただけない場合、返送料お客様負担（着払い）にて返送可能です。「満額以外キャンセル」を選択された場合、減額時は即時返送手続きに入ります。
+【3】査定基準について
+カードの状態評価は当店基準にて行います。スリーブ等の付属品は返却を保証いたしません。
+【4】配送トラブル
+配送中の紛失・破損について、当店は一切の責任を負いません。
+【5】本人確認
+古物営業法に基づき、本人確認書類の提出および本人名義口座への振込が必須です。</div>
 
       <div class="form-check mb-2">
         <input class="form-check-input" type="checkbox" id="agree" required>
@@ -117,9 +98,8 @@
 </div>
 
 <script>
-  const GAS_URL = "あなたのGASのURL";
+  const GAS_URL = "YOUR_GAS_URL_HERE";
 
-  // 生年月日の自動スラッシュ挿入
   document.getElementById('birthday').addEventListener('input', function(e) {
     let v = this.value.replace(/\D/g, '');
     if (v.length >= 5) v = v.slice(0, 4) + '/' + v.slice(4, 6) + '/' + v.slice(6, 8);
@@ -130,64 +110,41 @@
   async function checkRepeater() {
     const name = document.getElementById('name').value.trim();
     const tel = document.getElementById('tel').value.trim();
-    if(!name || !tel) return alert("照合には氏名と電話番号の入力が必要です。");
-    
+    if(!name || !tel) return alert("氏名と電話番号を入力してください。");
     const msg = document.getElementById('statusMsg');
-    const reqElements = document.querySelectorAll('.need-req');
-    const reqLabel = document.getElementById('req-label');
-
     try {
       const res = await fetch(`${GAS_URL}?action=check_only&searchTel=${tel}&searchName=${encodeURIComponent(name)}`);
       const json = await res.json();
       msg.style.display = "block";
       if(json.found) {
-        msg.className = "status-msg msg-success";
-        msg.innerText = "過去の登録情報を確認しました。変更がない項目は入力不要です。";
-        reqLabel.innerText = "（変更がある場合のみ入力してください）";
-        reqElements.forEach(el => { el.required = false; el.placeholder = "登録済みの情報を利用"; });
+        msg.className = "status-msg msg-success"; msg.innerText = "過去の登録情報を確認。変更がない項目は入力不要です。";
+        document.querySelectorAll('.need-req').forEach(el => { el.required = false; el.placeholder = "登録済みの情報を利用"; });
       } else {
-        msg.className = "status-msg msg-error";
-        msg.innerText = "登録情報がありません。全項目入力してください。";
-        reqLabel.innerText = "（全項目必須）";
-        reqElements.forEach(el => { el.required = true; el.placeholder = ""; });
+        msg.className = "status-msg msg-error"; msg.innerText = "登録情報がありません。全項目入力してください。";
+        document.querySelectorAll('.need-req').forEach(el => { el.required = true; el.placeholder = ""; });
       }
-    } catch(e) { alert("照合エラーが発生しました。"); }
+    } catch(e) { alert("照合エラー"); }
   }
 
   document.getElementById('entryForm').onsubmit = async (e) => {
     e.preventDefault();
     const btn = document.getElementById('submitBtn');
     btn.disabled = true; btn.innerText = "送信中...";
-
-    // データの取得とトリミング
     const getVal = (id) => document.getElementById(id).value.trim();
-
     const data = {
       action: "customer_register",
       customerDetail: {
-        name: getVal('name'),
-        kana: getVal('kana'),
-        birthday: getVal('birthday'),
-        tel: getVal('tel'),
-        addressText: getVal('addressText'),
-        idNum: getVal('idNum'),
-        job: getVal('job'),
-        bankName: getVal('bankName'),
-        bankBranch: getVal('bankBranch'),
-        bankType: document.getElementById('bankType').value,
-        bankNum: getVal('bankNum'),
-        bankHolder: getVal('bankHolder'),
-        // チェックボックスの状態を送信
+        name: getVal('name'), kana: getVal('kana'), birthday: getVal('birthday'), tel: getVal('tel'),
+        addressText: getVal('addressText'), idNum: getVal('idNum'), job: getVal('job'),
+        bankName: getVal('bankName'), bankBranch: getVal('bankBranch'), bankType: document.getElementById('bankType').value,
+        bankNum: getVal('bankNum'), bankHolder: getVal('bankHolder'),
         cancelIfSubMax: document.getElementById('cancelIfSubMax').checked ? "希望する" : "希望しない"
       }
     };
-
     try {
       const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify(data) });
-      const json = await res.json();
-      if(json.result === "SUCCESS") { alert("申し込みが完了しました。"); location.reload(); }
-    } catch(err) { alert("送信に失敗しました。"); }
-    finally { btn.disabled = false; btn.innerText = "査定を申し込む"; }
+      alert("申し込みが完了しました。"); location.reload();
+    } catch(err) { alert("送信に失敗しました。"); btn.disabled = false; btn.innerText = "査定を申し込む"; }
   };
 </script>
 </body>
