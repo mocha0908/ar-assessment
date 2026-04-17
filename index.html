@@ -113,7 +113,7 @@
     <div class="mt-5 d-flex flex-column gap-3 no-print">
       <button class="btn btn-success btn-lg fw-bold shadow" onclick="window.print()"><i class="bi bi-printer"></i> 印刷・PDF保存</button>
       <button class="btn btn-primary btn-lg fw-bold shadow" id="btn-finalize" onclick="finalizeTrade()"><i class="bi bi-cloud-upload"></i> 買取確定・保存</button>
-      <button class="btn btn-outline-secondary py-3 fw-bold" onclick="hideReceipt()">編集に戻る</button>
+      <button id="receipt-back-btn" class="btn btn-outline-secondary py-3 fw-bold" onclick="hideReceipt()">編集に戻る</button>
     </div>
   </div>
 </div>
@@ -129,6 +129,7 @@
 <script>
   const GAS_URL = "https://script.google.com/macros/s/AKfycbwi7tWn74PWL-HD59oj7p1DZDdfddMn4wdJRJCCZJKznuBSLZ6GA88W6Lp-g1RrFkkSOw/exec";
   let cards = [], inputs = {}, activeCaseId = "default", cases = {}, currentFilter = "", waitingList = [];
+  let isViewingLog = false; // 履歴閲覧モードかどうかのフラグ
 
   const filterMap = {"あ":"^[あいうえおアイウエオ]","か":"^[かきくけこがぎぐげご]","さ":"^[さしすせそざじずぜぞ]","た":"^[たちつてとだぢづでど]","な":"^[なにぬねの]","は":"^[はひふへほばびぶべぼぱぴぷぺぽ]","ま":"^[まみむめも]","や":"^[やゆよ]","ら":"^[らりるれろ]","わ":"^[わをん]"};
 
@@ -153,6 +154,7 @@
   }
 
   function changeQty(name, type, price, delta) {
+    if(isViewingLog) return; // 履歴モード時は編集不可
     const key = name + '-' + type;
     let q = (inputs[key]?.q || 0) + delta;
     if (q <= 0) delete inputs[key]; else inputs[key] = { n: name, t: type, p: price, q: q };
@@ -161,6 +163,7 @@
   }
 
   function updateQtyManually(name, type, price, val) {
+    if(isViewingLog) return; // 履歴モード時は編集不可
     const key = name + '-' + type;
     let q = parseInt(val, 10);
     if (isNaN(q) || q <= 0) { delete inputs[key]; } else { inputs[key] = { n: name, t: type, p: price, q: q }; }
@@ -191,6 +194,11 @@
   function showReceipt() {
     document.getElementById('main-ui').style.display='none'; document.getElementById('receipt').style.display='block';
     const b = document.getElementById('r-body'); b.innerHTML = ""; let total = 0;
+    
+    // 履歴閲覧時は「確定ボタン」を非表示にし、「戻るボタン」の文字を変える
+    document.getElementById('btn-finalize').style.display = isViewingLog ? 'none' : 'block';
+    document.getElementById('receipt-back-btn').innerText = isViewingLog ? '履歴一覧に戻る' : '編集に戻る';
+
     Object.keys(inputs).forEach(key => {
       const i = inputs[key]; const sub = i.q * i.p; total += sub;
       b.innerHTML += `<tr>
@@ -199,21 +207,39 @@
         <td class="text-center">
           <div class="qty-ctrl has-value no-print" style="margin:auto;">
             <button class="qty-btn" onclick="changeQty('${i.n}','${i.t}',${i.p},-1)">-</button>
-            <input type="number" class="qty-num" value="${i.q}" onchange="updateQtyManually('${i.n}','${i.t}',${i.p},this.value)">
+            <input type="number" class="qty-num" value="${i.q}" onchange="updateQtyManually('${i.n}','${i.t}',${i.p},this.value)" ${isViewingLog ? 'disabled' : ''}>
             <button class="qty-btn" onclick="changeQty('${i.n}','${i.t}',${i.p},1)">+</button>
           </div>
           <span class="print-only print-compress-text" style="font-weight:bold;">${i.q}</span>
         </td>
         <td class="text-end fw-bold print-compress-text">¥${sub.toLocaleString()}</td>
-        <td class="no-print text-center"><button class="btn-delete-row" onclick="deleteRow('${key}')"><i class="bi bi-trash3-fill"></i></button></td>
+        <td class="no-print text-center">
+            ${isViewingLog ? '' : `<button class="btn-delete-row" onclick="deleteRow('${key}')"><i class="bi bi-trash3-fill"></i></button>`}
+        </td>
       </tr>`;
     });
-    b.innerHTML += `<tr style="background:#f1f5f9; -webkit-print-color-adjust: exact;"><td colspan="2" class="text-end fw-bold print-compress-text">合計査定額</td><td class="text-center print-compress-text" style="font-weight:bold;">${document.getElementById('t-qty').innerText}</td><td class="text-end text-danger fw-bold print-compress-total" style="font-size:1.4rem;">¥${total.toLocaleString()}</td><td class="no-print"></td></tr>`;
-    document.getElementById('receipt-meta').innerHTML = `氏名: ${document.getElementById('cust-name').value || "未指定"} 様 ${cases[activeCaseId].cancelIfSubMax === "希望する" ? "<br><span class='text-danger'>【！！満額査定以外返送希望！！】</span>" : ""}`;
+    
+    const tq = Object.values(inputs).reduce((sum, item) => sum + item.q, 0);
+    b.innerHTML += `<tr style="background:#f1f5f9; -webkit-print-color-adjust: exact;"><td colspan="2" class="text-end fw-bold print-compress-text">合計査定額</td><td class="text-center print-compress-text" style="font-weight:bold;">${tq}</td><td class="text-end text-danger fw-bold print-compress-total" style="font-size:1.4rem;">¥${total.toLocaleString()}</td><td class="no-print"></td></tr>`;
+    
+    // メタ情報（名前など）の表示
+    const nameStr = isViewingLog ? tempLogMeta.name : (document.getElementById('cust-name').value || "未指定");
+    document.getElementById('receipt-meta').innerHTML = `氏名: ${nameStr} 様 ${cases[activeCaseId].cancelIfSubMax === "希望する" ? "<br><span class='text-danger'>【！！満額査定以外返送希望！！】</span>" : ""}`;
   }
 
-  function hideReceipt() { document.getElementById('receipt').style.display='none'; document.getElementById('main-ui').style.display='block'; draw(); }
-  function deleteRow(key) { delete inputs[key]; saveCurrentCase(); calc(); showReceipt(); }
+  function hideReceipt() {
+    document.getElementById('receipt').style.display='none';
+    document.getElementById('main-ui').style.display='block';
+    if(isViewingLog) {
+      isViewingLog = false;
+      loadCase(activeCaseId); // 元の編集中の案件に戻す
+      switchMode('logs'); // 履歴画面を表示
+    } else {
+      draw();
+    }
+  }
+
+  function deleteRow(key) { if(isViewingLog) return; delete inputs[key]; saveCurrentCase(); calc(); showReceipt(); }
 
   function saveCurrentCase() {
     if(!cases[activeCaseId]) return;
@@ -266,46 +292,47 @@
     } catch(e) { alert("失敗"); }
   }
 
-  // 🌟【修正】履歴の表示ロジックを強化
   async function loadTradeLogs() {
     const container = document.getElementById('logs-container'); container.innerHTML = "読み込み中...";
     try {
       const res = await fetch(GAS_URL + "?action=getTradeLogs");
       const logs = await res.json();
-      if (!logs || logs.length === 0) {
-        container.innerHTML = "履歴はありません。";
-        return;
-      }
-      container.innerHTML = logs.map(l => {
-        // 各値が正常かチェック
-        const name = l.name || "不明";
-        const date = l.date || "--/--";
-        const amount = (l.totalAmount !== undefined && l.totalAmount !== null) ? Number(l.totalAmount).toLocaleString() : "0";
-        const qty = l.totalQty || "0";
-        
+      if (!logs || logs.length === 0) { container.innerHTML = "履歴はありません。"; return; }
+      container.innerHTML = logs.map((l, index) => {
+        const amount = Number(l.totalAmount).toLocaleString();
         return `<div class="log-item">
           <div class="d-flex justify-content-between align-items-center">
-            <b>${name} 様 <small class="text-secondary">(${date})</small></b>
+            <b>${l.name} 様 <small class="text-secondary">(${l.date})</small></b>
             <span class="text-danger fw-bold h5 mb-0">¥${amount}</span>
           </div>
-          <div class="small text-secondary mb-2">${qty}枚 買取完了</div>
-          <button class="btn btn-sm btn-outline-dark" onclick='showLogDetail(${JSON.stringify(l.items)})'>詳細を表示</button>
+          <div class="small text-secondary mb-2">${l.totalQty}枚 買取完了</div>
+          <button class="btn btn-sm btn-outline-dark" onclick='showLogDetail(${index}, ${JSON.stringify(l)})'>詳細を明細表で表示</button>
         </div>`;
       }).join('');
-    } catch(e) { 
-      console.error(e);
-      container.innerHTML = "取得失敗。通信環境を確認してください。"; 
-    }
+      window.currentLogs = logs; // グローバルに保存
+    } catch(e) { container.innerHTML = "取得失敗。"; }
   }
 
-  // 🌟【追加】詳細表示用の関数
-  function showLogDetail(itemsJson) {
+  // 🌟【修正】詳細を明細表ページとして表示するロジック
+  let tempLogMeta = {};
+  function showLogDetail(index, logData) {
     try {
-      const items = JSON.parse(itemsJson);
-      const detail = items.map(i => `${i.n} (${i.t}) x${i.q}`).join('\n');
-      alert("内容詳細:\n" + (detail || "明細なし"));
+      const logItems = JSON.parse(logData.items);
+      // 履歴用の一時的なデータを作成
+      const logInputs = {};
+      logItems.forEach(i => {
+        const key = `${i.n}-${i.t}`;
+        logInputs[key] = i;
+      });
+      
+      // 現在の査定データを壊さないよう退避（メモリ上のみ）し、履歴データをセット
+      isViewingLog = true;
+      tempLogMeta = { name: logData.name };
+      inputs = logInputs; 
+      
+      showReceipt(); // 明細画面を表示
     } catch(e) {
-      alert("明細データの読み込みに失敗しました。");
+      alert("明細の読み込みに失敗しました。");
     }
   }
 
