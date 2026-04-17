@@ -28,14 +28,12 @@
     .qty-num { width: 36px; border: none; text-align: center; background: transparent; font-weight: bold; font-size: 0.95rem; color: inherit; outline: none; padding: 0; }
     input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
     .footer-bar { position: fixed; bottom: 0; width: 100%; background: var(--main); color: white; padding: 12px 25px; display: flex; justify-content: space-between; align-items: center; z-index: 1050; }
-    .log-item { background: white; margin: 10px; padding: 15px; border-radius: 8px; border-left: 5px solid var(--main); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-    
-    /* 明細画面 */
     .receipt-container { max-width: 800px; margin: 0 auto; background: #fff; padding: 30px; }
     .table-receipt { width: 100%; border-collapse: collapse; margin-top: 15px; border: 1px solid #dee2e6; }
     .table-receipt th, .table-receipt td { border: 1px solid #dee2e6; padding: 12px 15px; vertical-align: middle; }
     .table-receipt th { background-color: #f8fafc; text-align: center; color: #64748b; font-size: 0.85rem; }
     .btn-delete-row { color: #ef4444; border: none; background: none; font-size: 1.2rem; cursor: pointer; padding: 0; }
+    .log-item { background: white; margin: 10px; padding: 15px; border-radius: 8px; border-left: 5px solid var(--main); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
     .print-only { display: none !important; }
 
     @media print {
@@ -70,7 +68,7 @@
       <button class="btn btn-primary btn-sm fw-bold px-3" onclick="createNewCase()">新規</button>
       <div id="case-list-area" class="d-flex gap-1 flex-grow-1"></div>
       <select id="waiting-select" class="form-select form-select-sm fw-bold border-warning" style="width: 140px; background-color: #fffbeb;" onchange="handleWaitingSelect(this)">
-        <option value="">⏳ 待機中...</option>
+        <option value="">⏳ 待機中</option>
       </select>
     </div>
   </div>
@@ -268,13 +266,47 @@
     } catch(e) { alert("失敗"); }
   }
 
+  // 🌟【修正】履歴の表示ロジックを強化
   async function loadTradeLogs() {
     const container = document.getElementById('logs-container'); container.innerHTML = "読み込み中...";
     try {
       const res = await fetch(GAS_URL + "?action=getTradeLogs");
       const logs = await res.json();
-      container.innerHTML = logs.map(l => `<div class="log-item"><div class="d-flex justify-content-between"><b>${l.name} 様 (${l.date})</b><span class="text-danger fw-bold">¥${Number(l.totalAmount).toLocaleString()}</span></div><div class="small">${l.totalQty}枚</div><button class="btn btn-sm btn-link p-0" onclick='alert("内容詳細:\\n" + JSON.parse(${JSON.stringify(l.items)}).map(i=>i.n+" ("+i.t+") x"+i.q).join("\\n"))'>詳細を表示</button></div>`).join('');
-    } catch(e) { container.innerHTML = "取得失敗"; }
+      if (!logs || logs.length === 0) {
+        container.innerHTML = "履歴はありません。";
+        return;
+      }
+      container.innerHTML = logs.map(l => {
+        // 各値が正常かチェック
+        const name = l.name || "不明";
+        const date = l.date || "--/--";
+        const amount = (l.totalAmount !== undefined && l.totalAmount !== null) ? Number(l.totalAmount).toLocaleString() : "0";
+        const qty = l.totalQty || "0";
+        
+        return `<div class="log-item">
+          <div class="d-flex justify-content-between align-items-center">
+            <b>${name} 様 <small class="text-secondary">(${date})</small></b>
+            <span class="text-danger fw-bold h5 mb-0">¥${amount}</span>
+          </div>
+          <div class="small text-secondary mb-2">${qty}枚 買取完了</div>
+          <button class="btn btn-sm btn-outline-dark" onclick='showLogDetail(${JSON.stringify(l.items)})'>詳細を表示</button>
+        </div>`;
+      }).join('');
+    } catch(e) { 
+      console.error(e);
+      container.innerHTML = "取得失敗。通信環境を確認してください。"; 
+    }
+  }
+
+  // 🌟【追加】詳細表示用の関数
+  function showLogDetail(itemsJson) {
+    try {
+      const items = JSON.parse(itemsJson);
+      const detail = items.map(i => `${i.n} (${i.t}) x${i.q}`).join('\n');
+      alert("内容詳細:\n" + (detail || "明細なし"));
+    } catch(e) {
+      alert("明細データの読み込みに失敗しました。");
+    }
   }
 
   async function refreshWaiting() {
